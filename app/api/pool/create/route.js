@@ -8,22 +8,24 @@ function slugify(s) {
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export async function POST(req) {
-  const body = await req.json();
-  const { poolName, adminName, adminPin, drawSurvives } = body;
+  const { poolName, adminName, adminPin, drawSurvives } = await req.json();
   if (!poolName || !adminName || !adminPin || adminPin.length < 4) {
     return NextResponse.json({ error: "Missing pool name, your name, or a 4+ digit PIN." }, { status: 400 });
   }
   let slug = slugify(poolName) || "pool";
-  // ensure unique slug
   if (await getPool(slug)) slug = `${slug}-${uid().slice(0, 4)}`;
 
   const adminId = uid();
   const pool = {
     config: {
-      slug,
-      poolName,
-      adminId,
+      slug, poolName, adminId,
       drawSurvives: !!drawSurvives,
+      lives: 2,                 // spare lives — eliminated on the 3rd wrong pick
+      slots: {},                // bracket slot -> team, assigned by admin after groups
+      duos: [
+        { id: "d1", name: "Team 1", members: [] },
+        { id: "d2", name: "Team 2", members: [] },
+      ],
       rounds: buildRounds(),
       createdAt: Date.now(),
     },
